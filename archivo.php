@@ -6,7 +6,7 @@
 
     // Función para capturar las teclas y convertirlas en letras
     function obtenerClima($ciudad) {
-        $apiKey = "6c3bd8127bd03202f4c2768018711000"; // Reemplaza con tu clave de API válida
+        $apiKey = "YOUR API KEY"; // Reemplaza con tu clave de API válida
         $url = "http://api.openweathermap.org/data/2.5/weather?q=" . urlencode($ciudad) . "&appid=" . $apiKey . "&lang=es&units=metric";
     
         $curl = curl_init();
