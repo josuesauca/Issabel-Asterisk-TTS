@@ -4,9 +4,50 @@
     $agi = new AGI();
     $agi-> answer();
 
+    function transcribirAudio($archivo) {
+
+        $apiUrl = "http://192.168.1.13:7880/transcribe"; // Usa la IP correcta
+
+    
+        if (!file_exists($archivo)) {
+            return "Error: El archivo de audio no existe.";
+        }
+    
+        $cfile = curl_file_create($archivo, 'audio/wav', basename($archivo)); // Crear archivo cURL
+        $data = ['audio' => $cfile];
+    
+        $curl = curl_init();
+    
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $apiUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $data,
+            CURLOPT_HTTPHEADER => [
+                "Accept: application/json",
+                "User-Agent: PHP-cURL"
+            ],
+        ]);
+    
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+    
+        curl_close($curl);
+    
+        if ($err) {
+            return "Error en cURL: " . $err;
+        } else {
+            #$decodedResponse = json_decode($response, true);
+            $decodedResponse = json_decode($response, true, 512, JSON_INVALID_UTF8_IGNORE);
+
+            return $decodedResponse['transcription'] ?? "Error en la transcripción.";
+        }
+    }
+
+
     // Función para capturar las teclas y convertirlas en letras
     function obtenerClima($ciudad) {
-        $apiKey = "YOUR API KEY"; // Reemplaza con tu clave de API válida
+        $apiKey = "Api-Key"; // Reemplaza con tu clave de API válida
         $url = "http://api.openweathermap.org/data/2.5/weather?q=" . urlencode($ciudad) . "&appid=" . $apiKey . "&lang=es&units=metric";
     
         $curl = curl_init();
@@ -210,6 +251,61 @@
                     echo "Saliendo del sistema...";
                     $aux2 = true; // Reinicia la variable para que vuelva a pedir la ciudad en el próximo ciclo
                     break 2; // Sale del switch y del while, rompiendo ambos ciclos.
+                
+                case '5':  // Nueva opción para llamar a la extensión 2005
+                    echo "Llamando a la extensión 2005...\n";
+                    $agi->exec("Dial", "SIP/2005");
+
+                    // Esperamos unos segundos para que se termine de guardar el archivo
+                    sleep(2); // Ajusta si hace falta
+
+                    // Buscamos el archivo .wav más reciente en la carpeta
+                    $directory = '/var/spool/asterisk/monitor/';
+                    $latest_file = '';
+                    $latest_time = 0;
+
+                    foreach (glob($directory . "*.wav") as $file) {
+                        $file_time = filemtime($file);
+                        if ($file_time > $latest_time) {
+                            $latest_time = $file_time;
+                            $latest_file = $file;
+                        }
+                    }
+
+                    if ($latest_file !== '') {
+                        echo "Archivo detectado: $latest_file\n";
+                        //$resultado = transcribirAudio($latest_file);
+                        //echo "Transcripción: " . $resultado . "\n";
+                        //generarAudio($resultado, $agi); // O haz lo que necesites
+                    } else {
+                        echo "No se encontró ningún archivo de audio reciente.\n";
+                    }
+
+                    break;
+
+                    //
+                    //$agi->exec("Dial", "SIP/2005"); // Llama a la extensión 2005 usando SIP. Asegúrate de que la extensión esté configurada en Asterisk.
+                    
+                    //$archivo = "test.wav"; // Ruta del archivo
+                    //$archivo = "/var/lib/asterisk/agi-bin/test1.wav";
+                    //$resultado = transcribirAudio($archivo);
+                    //generarAudio($resultado,$agi);
+
+                    //echo "Transcripción: " . $resultado;
+
+                    //echo utf8_encode("Transcripción: $resultado");
+
+
+                    // Esperar una tecla durante 10 segundos (puedes ponerlo en bucle)
+                    //$agi->exec("WaitExten", "10"); // alternativa también puede ser WaitForDigit
+
+                    // Supongamos que detectas el '#', grabas
+                    //$nombreArchivo = "/var/spool/asterisk/monitor/notavocal_" . date('Ymd_His');
+                    //$agi->exec("Record", "{$nombreArchivo}.wav,5,10");
+
+                    //break;
+
+                    
             }
         }
 
